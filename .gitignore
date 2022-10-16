@@ -68,3 +68,6 @@ docs/_build/
 .cprofile_*
 node_modules
 package-lock.json
+
+# odoo source
+odoo
