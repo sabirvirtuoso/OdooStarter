@@ -71,3 +71,4 @@ package-lock.json
 
 # odoo source
 odoo
+run.sh
