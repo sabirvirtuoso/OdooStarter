@@ -1,9 +1,10 @@
 from odoo import fields, models, api
 from odoo.exceptions import UserError
 
-
 import logging
+
 _logger = logging.getLogger(__name__)
+
 
 class EstatePropertyOffer(models.Model):
     _name = 'estate.property.offer'
@@ -17,6 +18,10 @@ class EstatePropertyOffer(models.Model):
 
     partner_id = fields.Many2one('res.partner', string="Buyer", required=True)
     property_id = fields.Many2one('estate.property', string="Property", required=True)
+
+    # _sql_constraints = [
+    #     ('check_offer_price', 'CHECK (price > 0)', 'The offer price should be strictly positive')
+    # ]
 
     # -------------------------------------------------------------------------
     # COMPUTE METHODS
@@ -56,4 +61,3 @@ class EstatePropertyOffer(models.Model):
                 offer.property_id.partner_id = None
             offer.status = 'refused'
             return True
-
