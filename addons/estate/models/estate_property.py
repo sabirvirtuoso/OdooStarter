@@ -1,4 +1,8 @@
 from odoo import fields, models, api
+from odoo.exceptions import UserError
+
+import logging
+_logger = logging.getLogger(__name__)
 
 
 class EstateProperty(models.Model):
@@ -65,3 +69,23 @@ class EstateProperty(models.Model):
     def _onchange_garden(self):
         self.garden_area = 10 if self.garden is True else 0
         self.garden_orientation = 'north' if self.garden is True else ''
+
+    # -------------------------------------------------------------------------
+    # ACTION METHODS
+    # -------------------------------------------------------------------------
+
+    def action_sold(self):
+        for prop in self:
+            if prop.state == 'cancelled':
+                raise UserError('A cancelled property cannot be sold.')
+            else:
+                prop.state = 'sold'
+            return True
+
+    def action_cancelled(self):
+        for prop in self:
+            if prop.state == 'sold':
+                raise UserError("A sold property cannot be cancelled.")
+            else:
+                prop.state = 'cancelled'
+            return True

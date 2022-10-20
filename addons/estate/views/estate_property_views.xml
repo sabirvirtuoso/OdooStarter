@@ -29,6 +29,10 @@
             <field name="model">estate.property</field>
             <field name="arch" type="xml">
                 <form string="Property">
+                    <header>
+                        <button name="action_sold" type="object" string="SOLD"/>
+                        <button name="action_cancelled" type="object" string="CANCEL"/>
+                    </header>
                     <sheet>
                         <group>
                             <field name="name" class="h1" nolabel="1"/>
@@ -38,15 +42,18 @@
                         </group>
                         <group>
                             <group>
-                                <field name="property_type_id"/>
+                                <field name="state"/>
                                 <field name="expected_price"/>
                             </group>
                             <group>
-                                <field name="postcode"/>
+                                <field name="property_type_id"/>
                                 <field name="best_price"/>
                             </group>
                             <group>
+                                <field name="postcode"/>
                                 <field name="selling_price"/>
+                            </group>
+                            <group>
                                 <field name="date_availability"/>
                             </group>
                         </group>
@@ -81,9 +88,17 @@
                                 </group>
                             </page>
                             <page string="Offers">
-                                <tree string="Property Offers">
-                                    <field name="offer_ids"/>
-                                </tree>
+                                <field name="offer_ids" type="xml">
+                                    <tree string="Property Offers">
+                                        <field name="price"/>
+                                        <field name="partner_id"/>
+                                        <field name="validity" string="Validity(days)"/>
+                                        <field name="date_deadline"/>
+                                        <button name="action_accept" string="Accept" type="object" icon="fa-check"/>
+                                        <button name="action_refuse" string="Refuse" type="object" icon="fa-times"/>
+                                        <field name="status"/>
+                                    </tree>
+                                </field>
                             </page>
                             <page string="Other info">
                                 <group>
