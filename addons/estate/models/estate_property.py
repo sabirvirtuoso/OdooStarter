@@ -61,6 +61,8 @@ class EstateProperty(models.Model):
     #      'The selling price of a property should be strictly positive.')
     # ]
 
+    _order = "id desc"
+
     # -------------------------------------------------------------------------
     # COMPUTE METHODS
     # -------------------------------------------------------------------------
