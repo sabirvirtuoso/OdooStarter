@@ -1,5 +1,6 @@
 from odoo import fields, models, api
-from odoo.exceptions import UserError
+from odoo.exceptions import UserError, ValidationError
+from odoo.tools import float_compare
 
 import logging
 
@@ -9,22 +10,23 @@ _logger = logging.getLogger(__name__)
 class EstatePropertyOffer(models.Model):
     _name = 'estate.property.offer'
     _description = 'Estate Property Offer'
-
-    price = fields.Float()
-
-    validity = fields.Integer(default=7)
-    date_deadline = fields.Date(string="Deadline", compute='_compute_deadline', inverse='_inverse_deadline')
-    status = fields.Selection(selection=[('accepted', 'Accepted'), ('refused', 'Refused')], copy=False)
-
-    partner_id = fields.Many2one('res.partner', string="Buyer", required=True)
-    property_id = fields.Many2one('estate.property', string="Property", required=True)
-
-    property_type_id = fields.Many2one(related="property_id.property_type_id", store=True)
     # _sql_constraints = [
     #     ('check_offer_price', 'CHECK (price > 0)', 'The offer price should be strictly positive')
     # ]
 
     _order = "price desc"
+
+    price = fields.Float()
+
+    validity = fields.Integer(default=7)
+    date_deadline = fields.Date(string="Deadline", compute='_compute_deadline', inverse='_inverse_deadline')
+    status = fields.Selection(selection=[('pending', 'Pending'), ('accepted', 'Accepted'), ('refused', 'Refused')],
+                              copy=False, default='pending')
+
+    partner_id = fields.Many2one('res.partner', string="Buyer", required=True)
+    property_id = fields.Many2one('estate.property', string="Property", required=True)
+
+    property_type_id = fields.Many2one(related="property_id.property_type_id", store=True)
 
     # -------------------------------------------------------------------------
     # COMPUTE METHODS
@@ -40,6 +42,19 @@ class EstatePropertyOffer(models.Model):
         for offer in self:
             offer.validity = (fields.Datetime.to_datetime(offer.date_deadline) - fields.Datetime.to_datetime(
                 fields.Datetime.today() if offer.create_date is False else offer.create_date)).days + 1
+
+    # -------------------------------------------------------------------------
+    # CRUD METHODS
+    # -------------------------------------------------------------------------
+
+    @api.model
+    def create(self, vals):
+        prop = self.env['estate.property'].browse(vals['property_id'])
+        if float_compare(vals['price'], prop.best_price, 2) < 0:
+            raise ValidationError("A new offer cannot have a lower price than an existing offer")
+        else:
+            prop.state = 'offer received'
+            return super().create(vals)
 
     # -------------------------------------------------------------------------
     # ACTION METHODS

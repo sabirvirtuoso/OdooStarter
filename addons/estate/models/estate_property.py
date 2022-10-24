@@ -2,15 +2,18 @@ from odoo import fields, models, api
 from odoo.exceptions import UserError, ValidationError
 from odoo.tools import float_is_zero, float_compare
 
-import logging
-
-
-_logger = logging.getLogger(__name__)
-
 
 class EstateProperty(models.Model):
     _name = 'estate.property'
     _description = 'Housing Estate'
+    # _sql_constraints = [
+    #     ('check_expected_price', 'CHECK (expected_price > 0)',
+    #      'The expected price of a property should be strictly positive.')
+    #     ('check_selling_price', 'CHECK (selling_price > 0)',
+    #      'The selling price of a property should be strictly positive.')
+    # ]
+
+    _order = "id desc"
 
     active = fields.Boolean(default=True)
 
@@ -54,15 +57,6 @@ class EstateProperty(models.Model):
     total_area = fields.Float(compute='_compute_total_area', string="Total Area(sqm)")
     best_price = fields.Float(compute='_compute_best_price', string="Best Offer")
 
-    # _sql_constraints = [
-    #     ('check_expected_price', 'CHECK (expected_price > 0)',
-    #      'The expected price of a property should be strictly positive.')
-    #     ('check_selling_price', 'CHECK (selling_price > 0)',
-    #      'The selling price of a property should be strictly positive.')
-    # ]
-
-    _order = "id desc"
-
     # -------------------------------------------------------------------------
     # COMPUTE METHODS
     # -------------------------------------------------------------------------
@@ -75,12 +69,33 @@ class EstateProperty(models.Model):
     @api.depends('offer_ids')
     def _compute_best_price(self):
         for prop in self:
-            prop.best_price = max(prop.offer_ids.mapped('price'))
+            prop.best_price = 0.0 if not prop.offer_ids else max(prop.offer_ids.mapped('price'))
+
+    # -------------------------------------------------------------------------
+    # CONSTRAIN AND ONCHANGE METHODS
+    # -------------------------------------------------------------------------
 
     @api.onchange('garden')
     def _onchange_garden(self):
         self.garden_area = 10 if self.garden is True else 0
         self.garden_orientation = 'north' if self.garden is True else ''
+
+    @api.constrains('expected_price', 'selling_price')
+    def _check_selling_price(self):
+        for prop in self:
+            if not float_is_zero(prop.selling_price, 0):
+                if float_compare(prop.selling_price, (0.9 * prop.expected_price), 2) < 0:
+                    raise ValidationError("The selling price cannot be lower than 90% of expected price")
+
+    # -------------------------------------------------------------------------
+    # CRUD METHODS
+    # -------------------------------------------------------------------------
+
+    @api.ondelete(at_uninstall=False)
+    def _unlink_if_property_new_or_cancelled(self):
+        for prop in self:
+            if prop.state not in ['new', 'cancelled']:
+                raise UserError("Only New and Cancelled properties can be deleted")
 
     # -------------------------------------------------------------------------
     # ACTION METHODS
@@ -101,14 +116,3 @@ class EstateProperty(models.Model):
             else:
                 prop.state = 'cancelled'
             return True
-
-    # -------------------------------------------------------------------------
-    # CONSTRAINT METHODS
-    # -------------------------------------------------------------------------
-
-    @api.constrains('expected_price', 'selling_price')
-    def _check_selling_price(self):
-        for prop in self:
-            if not float_is_zero(prop.selling_price, 0):
-                if float_compare(prop.selling_price, (0.9 * prop.expected_price), 2) < 0:
-                    raise ValidationError("The selling price cannot be lower than 90% of expected price")
