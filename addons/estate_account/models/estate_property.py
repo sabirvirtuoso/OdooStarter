@@ -25,7 +25,7 @@ class EstateProperty(models.Model):
                         'price_unit': (self.selling_price * 0.06),
                     }),
                     Command.create({
-                        'name': 'line2',
+                        'name': 'Administrative expenses',
                         'quantity': 1,
                         'price_unit': 100.00,
                     }),
